@@ -6,13 +6,13 @@ This file separates implemented features, observed executions and work still awa
 
 On **11 October 2026**, the complete offline suite passed **119 tests** (`python -m pytest -q`). The production React build also passed. This includes the global hosted-admission counter, safe failure diagnostics, actual Strands tool-parser regressions for sensitive log output, the Bedrock-only unavailable override, and API checks proving that a disabled assistant or depleted/unavailable counter prevents model invocation. Three additional constructor checks cover the optional Haiku 5.5 generation settings while preserving Nova defaults. Disabled requests return HTTP 503 before reserving a daily slot; none of these tests made a paid model call.
 
-The latest successful [GitHub Actions verification](https://github.com/kshubham090/heatshift/actions/runs/38151596640) ran against commit [`60f0dda`](https://github.com/kshubham090/heatshift/commit/60f0dda).
+The Haiku adapter source commit [`e0af452`](https://github.com/kshubham090/heatshift/commit/e0af452) passed [GitHub Actions verification](https://github.com/kshubham090/heatshift/actions/runs/38153945937). The deployed source remains commit `60f0dda`; the additional Haiku configuration has not been deployed.
 
 Browser verification covered the normal forecast comparison, refusal of conflicting locks, local acceptance, and the actual JSON download linked below. The 390-pixel responsive layout had no horizontal document overflow. A real Strands/Ollama garden-window request returned a three-tool trace and a reviewable proposal. Editing an input disabled applying the stale proposal and printing the old plan. Restoring the original inputs and applying the reviewed proposal changed the garden window to 13:00–17:00, retained all 195 work minutes, and required a separate acceptance decision.
 
 The hosted app's **Print report** action was also verified through Chrome's actual **Save as PDF** workflow with **Default margins**. The resulting [two-page report for 12 October](evidence/printed-report-2026-10-12.pdf) was rendered with Poppler and visually checked: all report content was readable. The artifact contains the illustrative public plan and public app URL; it is not evidence of completed work or worker approval.
 
-The AWS templates passed CloudFormation lint. The Linux ARM64 package, including timezone data, was verified against the current backend and client build. Packaging checks alone establish neither a deployment nor successful inference; the subsequent hosted checks below establish the working planner.
+The AWS templates passed CloudFormation lint. The deployed Linux ARM64 package, including timezone data, was verified against the backend and client build at commit `60f0dda`. Packaging checks alone establish neither a deployment nor successful inference; the subsequent hosted checks below establish the working planner.
 
 ## Verified: AWS-hosted planner; cloud assistant blocked
 
@@ -116,7 +116,7 @@ The verified local configuration uses the event's AWS open-source route. It make
 | Acceptance and printed report | Local acceptance and complete printed report verified | Browser acceptance saved the plan. Hosted Chrome Save as PDF produced the linked two-page report with Default margins; Poppler rendering was visually checked and readable. |
 | Real Strands agent invocation | Verified locally as above | Record any additional constraint-edit demonstration separately. |
 | AWS cloud deployment | Hosted interface and all 13 final public HTTP checks passed | [Verification JSON](evidence/public-verification-2026-10-11.json) and [hosted screenshot](images/hosted-planner.png) linked above. Hosted assistant is unavailable; these checks did not invoke a model. |
-| Public repository | [Published](https://github.com/kshubham090/heatshift) | GitHub API confirms PUBLIC visibility. [Latest CI passed](https://github.com/kshubham090/heatshift/actions/runs/38151596640) at commit `60f0dda`. |
+| Public repository | [Published](https://github.com/kshubham090/heatshift) | GitHub API confirms PUBLIC visibility. [CI passed](https://github.com/kshubham090/heatshift/actions/runs/38153945937) at Haiku adapter source commit `e0af452`. |
 | Demo video | 2:14.77 screenshot-based narrated walkthrough prepared; participant review pending | YouTube upload and signed-out playback pending. This is not a continuous screen recording. |
 | Field validation | Not performed | A real supervisor's constraints and practical review; later measured conditions if available. |
 
