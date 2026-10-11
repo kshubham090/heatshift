@@ -236,12 +236,22 @@ def _make_model(provider: str, model: str, host: str) -> Any:
         from botocore.config import Config
         from strands.models import BedrockModel
         _suppress_strands_diagnostics()
+        generation_options: dict[str, Any] = {"temperature": 0}
+        if model in {"anthropic.claude-haiku-5-5", "global.anthropic.claude-haiku-5-5"}:
+            # Disable Haiku 5.5 default thinking for bounded planning requests.
+            # Keep this exact-ID scoped so other Bedrock models stay unchanged.
+            generation_options = {
+                "additional_request_fields": {
+                    "thinking": {"type": "disabled"},
+                    "output_config": {"effort": "low"},
+                },
+            }
         return BedrockModel(
             model_id=model,
             region_name=os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "us-east-1")),
             max_tokens=2200,
-            temperature=0,
             boto_client_config=Config(connect_timeout=5, read_timeout=60, retries={"max_attempts": 1}),
+            **generation_options,
         )
     raise AgentUnavailable("Select the ollama or bedrock agent provider.")
 

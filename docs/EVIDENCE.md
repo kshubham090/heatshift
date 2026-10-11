@@ -4,7 +4,7 @@ This file separates implemented features, observed executions and work still awa
 
 ## Latest complete verification
 
-On **11 October 2026**, the complete offline suite passed **116 tests** (`python -m pytest -q`). The production React build also passed. This includes the global hosted-admission counter, safe failure diagnostics, actual Strands tool-parser regressions for sensitive log output, the Bedrock-only unavailable override, and API checks proving that a disabled assistant or depleted/unavailable counter prevents model invocation. Disabled requests return HTTP 503 before reserving a daily slot; none of these tests made a paid model call.
+On **11 October 2026**, the complete offline suite passed **119 tests** (`python -m pytest -q`). The production React build also passed. This includes the global hosted-admission counter, safe failure diagnostics, actual Strands tool-parser regressions for sensitive log output, the Bedrock-only unavailable override, and API checks proving that a disabled assistant or depleted/unavailable counter prevents model invocation. Three additional constructor checks cover the optional Haiku 5.5 generation settings while preserving Nova defaults. Disabled requests return HTTP 503 before reserving a daily slot; none of these tests made a paid model call.
 
 The latest successful [GitHub Actions verification](https://github.com/kshubham090/heatshift/actions/runs/38151596640) ran against commit [`60f0dda`](https://github.com/kshubham090/heatshift/commit/60f0dda).
 
@@ -21,6 +21,8 @@ On **11 October 2026 at 21:08:49 IST**, all **13 public HTTP checks** passed aga
 The forecast was retrieved at **21:05:39 IST** for 12 October. The hosted result retained all **195 work minutes**, changing the duration-weighted forecast apparent temperature from **32.677°C to 28.431°C**, a **4.246°C** difference. Minutes at or above the user's 32°C marker changed from 165 to 15. These remain forecast calculations for an illustrative workload. The actual [hosted planner screenshot](images/hosted-planner.png) shows the loaded interface and rounded comparison. **The 13-check verification did not invoke a model.**
 
 An earlier hosted assistant request failed. A separate minimal request to the direct regional model `amazon.nova-lite-v1:0` in the official Bedrock playground also returned **`ValidationException: Operation not allowed`**. A later direct **Amazon Nova Micro** invocation returned the same error. This is an AWS account/service restriction; the specific cause has not been established. The final deployed health response accurately reports the hosted assistant unavailable, and assistant requests return the configured explanation. A healthy endpoint and configured provider are not proof of successful model inference. **No successful Bedrock model execution is claimed.** The verified Strands/Ollama executions below remain the assistant evidence.
+
+Claude Haiku 5.5 was also investigated as an alternative. Its required Anthropic use-case submission was rejected by AWS with **“Your account is not authorized to perform this action”** and an instruction to create a support case. The optional adapter settings are prepared and tested offline, but the hosted model and permissions were not changed. This failed access-form submission is not a successful Haiku invocation or a pending approved agreement.
 
 ## Prepared: narrated video walkthrough
 
@@ -108,7 +110,7 @@ The verified local configuration uses the event's AWS open-source route. It make
 
 | Item | Status in this record | What establishes completion |
 |---|---|---|
-| Full application test suite | 116 offline tests and production build passed | Recorded in Latest complete verification above. |
+| Full application test suite | 119 offline tests and production build passed | Recorded in Latest complete verification above. |
 | Normal/conflict browser workflows | Verified and pictured above | Retained planner and conflicting-lock screenshots. |
 | JSON evidence export | Verified; exact downloaded artifact linked above | Raw request, schedule, metrics and full weather provenance are present. |
 | Acceptance and printed report | Local acceptance and complete printed report verified | Browser acceptance saved the plan. Hosted Chrome Save as PDF produced the linked two-page report with Default margins; Poppler rendering was visually checked and readable. |

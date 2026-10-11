@@ -471,3 +471,28 @@ def test_availability_override_is_cloud_only_and_empty_by_default(provider, reas
     monkeypatch.setenv("HEATSHIFT_AGENT_PROVIDER", provider)
     monkeypatch.setenv("HEATSHIFT_AGENT_DISABLED_REASON", reason)
     assert agent_module.get_agent_disabled_reason() is None
+
+
+@pytest.mark.parametrize("model,haiku_55", [
+    ("anthropic.claude-haiku-5-5", True),
+    ("global.anthropic.claude-haiku-5-5", True),
+    ("amazon.nova-lite-v1:0", False),
+])
+def test_bedrock_constructor_receives_model_supported_generation_options(model, haiku_55, monkeypatch):
+    import strands.models
+
+    # Inspect the real constructor boundary without creating a client or making
+    # an inference request. An unsupported sampling field causes API rejection.
+    monkeypatch.setattr(strands.models, "BedrockModel", lambda **options: options)
+    options = agent_module._make_model("bedrock", model, "unused-local-host")
+    assert options["model_id"] == model
+    assert options["max_tokens"] == 2200
+    if haiku_55:
+        assert "temperature" not in options
+        assert options["additional_request_fields"] == {
+            "thinking": {"type": "disabled"},
+            "output_config": {"effort": "low"},
+        }
+    else:
+        assert options["temperature"] == 0
+        assert "additional_request_fields" not in options
