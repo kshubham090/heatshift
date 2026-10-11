@@ -1,4 +1,6 @@
-# Zero-spend Build It route
+# Hosted planner and complete local workflow
+
+The [public AWS Lambda demo](https://tap7v5jbtjbasqpzmskibpi7we0atrge.lambda-url.us-east-1.on.aws/) serves the React interface, real Open-Meteo weather and deterministic planning. Those operations are verified. The hosted assistant is currently unavailable because AWS rejects model requests for this account; the specific cause is not established. A configured Bedrock health response is not evidence of successful inference.
 
 HeatShift runs on your computer using the open-source AWS Strands Agents SDK and a local Ollama model. It does not create or call metered AWS cloud resources in the default configuration. AWS credits, payment details and AWS sign-in are not required for this route.
 
@@ -18,4 +20,4 @@ Then open `http://127.0.0.1:8000`. Start after the frontend build so the server 
 Publish the source repository and a YouTube demo under three minutes, as the rules require. A cloud-hosted live app URL is not required for the Build It route. Anyone with the required local runtime can reproduce the app and agent; the video should show the tool trace, forecast provenance, changed constraint, failure case and accepted plan.
 
 ## Cloud status
-The default configuration remains local Ollama. Optional AWS packaging and CloudFormation files are included for a separately reviewed hosted deployment; see [AWS hosting review](AWS_HOSTING_REVIEW.md). Those files do not establish that a cloud stack has been deployed, and running the local instructions does not create one.
+AWS Lambda hosting is live, while the complete assistant remains verified through local Strands/Ollama. Packaging and CloudFormation files document the deployed architecture; see [AWS hosting details](AWS_HOSTING_REVIEW.md). Running the local instructions above does not create or call those AWS resources. [Evidence](EVIDENCE.md) records the successful hosted planner check and the failed Bedrock invocation separately.

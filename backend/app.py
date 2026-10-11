@@ -117,7 +117,10 @@ async def optimize_endpoint(plan: PlanRequest):
 
 @app.post("/api/agent")
 async def agent_endpoint(body: AgentRequest):
-    from .agent import run_agent
+    from .agent import get_agent_disabled_reason, run_agent
+    disabled_reason = get_agent_disabled_reason()
+    if disabled_reason:
+        raise HTTPException(status_code=503, detail=disabled_reason)
     if _agent_semaphore.locked():
         raise HTTPException(status_code=429, detail="The assistant is finishing another request. Please try again shortly.")
     try:

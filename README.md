@@ -4,11 +4,11 @@
 
 HeatShift helps a campus supervisor move flexible outdoor jobs into cooler available hours while preserving every job, its duration, permitted window, fixed start and the crew's paid shift and breaks. The result is a feasible schedule with weather evidence, ready for human review and export.
 
-Built for **Environmental Hacks 2026 · Heat and Water**, using the permitted **AWS open-source Build It route**. The agent runs AWS's Strands Agents SDK with local Ollama. No AWS cloud deployment, paid inference or AWS credits are used. The [event](https://www.wemakedevs.org/aws/env) gives local and deployed projects the same judging consideration.
+Built for **Environmental Hacks 2026 · Heat and Water**. [Try the hosted planner on AWS Lambda](https://tap7v5jbtjbasqpzmskibpi7we0atrge.lambda-url.us-east-1.on.aws/). The interface, real weather and deterministic planner are verified live. **The hosted assistant is currently unavailable:** Amazon Bedrock rejected inference with an account/service restriction. The full assistant is verified locally using AWS's open-source Strands Agents SDK with Ollama; follow the setup below to reproduce it. The [event](https://www.wemakedevs.org/aws/env) gives local and deployed projects the same judging consideration.
 
 ![HeatShift showing a feasible workday with the original and proposed schedule](docs/images/planner.png)
 
-See the [conflicting-locks screen](docs/images/conflict.png) and [complete exported forecast comparison](docs/evidence/forecast-comparison-2026-10-11.json). The export retains all 195 work minutes and records a 4.246°C lower forecast average for the illustrative 12 October workload; it is a dated planning result, not a measured health outcome.
+See the [conflicting-locks screen](docs/images/conflict.png), [complete exported forecast comparison](docs/evidence/forecast-comparison-2026-10-11.json) and [verified two-page printed report](docs/evidence/printed-report-2026-10-12.pdf). The export retains all 195 work minutes and records a 4.246°C lower forecast average for the illustrative 12 October workload; it is a dated planning result, not a measured health outcome.
 
 ## Run locally
 
@@ -46,7 +46,7 @@ npm run build
 python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
 ```
 
-Open **http://127.0.0.1:8000**. API documentation is at `/docs`. The [local workflow guide](docs/DEPLOYMENT.md) describes the same zero-cloud-spend setup; no cloud deployment files are included.
+Open **http://127.0.0.1:8000**. API documentation is at `/docs`. These local instructions create no cloud resources and make no paid inference requests. The [deployment guide](docs/DEPLOYMENT.md) distinguishes the complete local workflow from the hosted planner; [AWS hosting details](docs/AWS_HOSTING_REVIEW.md) document its resources, limits and reproducible packaging.
 
 ## Review the useful cases
 
@@ -86,6 +86,8 @@ No work completion, field pilot or measured environmental/health saving is claim
 
 Original code: [MIT](LICENSE). Third-party software, the Qwen model and Open-Meteo data retain their own terms; see [verified credits and licenses](docs/CREDITS.md). **OpenAI Codex assisted with research, implementation, tests and documentation.**
 
-[2:45 demo script](docs/DEMO_SCRIPT.md) · [Submission draft](docs/SUBMISSION.md) · [Evidence](docs/EVIDENCE.md) · [AWS Builder Center blog draft](docs/BUILDER_BLOG.md)
+[Final submission checklist](docs/SUBMISSION_CHECKLIST.md) · [2:45 demo script](docs/DEMO_SCRIPT.md) · [Submission draft](docs/SUBMISSION.md) · [Evidence](docs/EVIDENCE.md) · [AWS Builder Center blog draft](docs/BUILDER_BLOG.md)
 
-Add repository and YouTube links only after publication and verification. A cloud-hosted app URL is not required for the selected local route.
+**Public repository:** [github.com/kshubham090/heatshift](https://github.com/kshubham090/heatshift). The initial release passed [GitHub Actions verification](https://github.com/kshubham090/heatshift/actions/runs/38148246065).
+
+A **2:14.77 narrated walkthrough** is prepared from actual application screenshots, using a stock synthetic voice. It is not a continuous screen recording. Participant review, YouTube upload and signed-out playback verification are pending; event submission remains a draft. The hosted planner is live; successful Bedrock inference is not claimed.

@@ -4,11 +4,23 @@ This file separates implemented features, observed executions and work still awa
 
 ## Latest complete verification
 
-On **11 October 2026**, the complete offline suite passed **106 tests** (`python -m pytest -q`). The production React build also passed. This includes the global hosted-admission counter and API checks proving that a depleted or unavailable counter prevents model invocation; none of these tests made a paid model call.
+On **11 October 2026**, the complete offline suite passed **116 tests** (`python -m pytest -q`). The production React build also passed. This includes the global hosted-admission counter, safe failure diagnostics, actual Strands tool-parser regressions for sensitive log output, the Bedrock-only unavailable override, and API checks proving that a disabled assistant or depleted/unavailable counter prevents model invocation. Disabled requests return HTTP 503 before reserving a daily slot; none of these tests made a paid model call.
 
 Browser verification covered the normal forecast comparison, refusal of conflicting locks, local acceptance, and the actual JSON download linked below. The 390-pixel responsive layout had no horizontal document overflow. A real Strands/Ollama garden-window request returned a three-tool trace and a reviewable proposal. Editing an input disabled applying the stale proposal and printing the old plan. Restoring the original inputs and applying the reviewed proposal changed the garden window to 13:00–17:00, retained all 195 work minutes, and required a separate acceptance decision.
 
-Optional AWS templates passed CloudFormation lint. The Linux ARM64 package, including timezone data, was verified against the current backend and client build. These packaging checks establish neither a deployment nor successful Bedrock inference.
+The hosted app's **Print report** action was also verified through Chrome's actual **Save as PDF** workflow with **Default margins**. The resulting [two-page report for 12 October](evidence/printed-report-2026-10-12.pdf) was rendered with Poppler and visually checked: all report content was readable. The artifact contains the illustrative public plan and public app URL; it is not evidence of completed work or worker approval.
+
+The AWS templates passed CloudFormation lint. The Linux ARM64 package, including timezone data, was verified against the current backend and client build. Packaging checks alone establish neither a deployment nor successful inference; the subsequent hosted checks below establish the working planner.
+
+## Verified: AWS-hosted planner; cloud assistant blocked
+
+On **11 October 2026**, the public [AWS Lambda app](https://tap7v5jbtjbasqpzmskibpi7we0atrge.lambda-url.us-east-1.on.aws/) loaded the React interface. `/api/health` returned HTTP 200 and reported the Bedrock provider as configured. A real hosted forecast/optimizer request retained all **195 work minutes** and returned the **4.246°C** forecast-average difference for the illustrative 12 October workload.
+
+The hosted assistant request failed. A separate minimal request to the direct regional model `amazon.nova-lite-v1:0` in the official Bedrock playground also returned **`ValidationException: Operation not allowed`**. This is an AWS account/service restriction; the specific cause has not been established. A healthy endpoint and configured provider are not proof of successful model inference. **No successful Bedrock model execution is claimed.** The verified Strands/Ollama executions below remain the assistant evidence.
+
+## Prepared: narrated video walkthrough
+
+A **2:14.77** MP4 walkthrough was prepared from actual application screenshots with a stock synthetic narration voice. It is **not a continuous screen recording** and does not establish unrecorded interactions or successful Bedrock inference. The screenshots include states from the verified application flows; detailed execution evidence is recorded separately here. The video awaits the participant's review. YouTube upload, signed-out playback verification and event submission remain pending.
 
 ## Verified: deterministic engine and weather adapter
 
@@ -33,7 +45,7 @@ The tests include:
 
 Weather values inside unit tests are explicitly labeled synthetic fixtures. Those tests demonstrate correctness and failure handling, not a live forecast or environmental outcome.
 
-A separate middleware regression run passed **4 tests** in `tests/test_review_api.py`: an oversized chunked body stops reading after the first chunk exceeding 64 KiB; valid chunked UTF-8 JSON reaches the route unchanged; more than 2,000 real ASGI client peers retain at most 2,000 rate-limit entries with LRU eviction; unknown POST routes allocate no entries. These checks exercised the actual middleware rather than replacing it with a mock. The final complete-suite count is recorded separately when that full run is complete.
+A separate middleware regression run passed **4 tests** in `tests/test_review_api.py`: an oversized chunked body stops reading after the first chunk exceeding 64 KiB; valid chunked UTF-8 JSON reaches the route unchanged; more than 2,000 real ASGI client peers retain at most 2,000 rate-limit entries with LRU eviction; unknown POST routes allocate no entries. These checks exercised the actual middleware rather than replacing it with a mock. The complete-suite result is recorded above.
 
 The finalized agent-boundary run passed **40 tests** in `tests/test_agent.py`. Coverage includes negated edits, preservation of the original baseline, unique task identification, exact requested clock values, refusal of omitted requested changes, schema validation, rejected proposals, genuine tool-recording behavior and sanitized failure paths. These offline tests do not substitute for the real invocations below.
 
@@ -84,22 +96,22 @@ A later real run used **`qwen3:1.7b`** to handle a requested change: **garden ma
 
 A second current-model test used the exact request **“Do not unlock inspection. Set paid shift start to 09:00.”** It completed in **7.5 seconds** with an actual `inspect_plan` → `propose_plan` → `optimize_plan` trace. The proposal set the shift to **09:00–17:00**, retained the locked inspection and all **195 work minutes**, and required review before application. No input was automatically approved.
 
-These were actual local model invocations, not mocked tool traces. The durations are observed runs on this host, not response-time guarantees. Neither test establishes that every possible natural-language request is supported. Additional requested changes and the final complete test-suite run are recorded only after their results are verified.
+These were actual local model invocations, not mocked tool traces. The durations are observed runs on this host, not response-time guarantees. Neither test establishes that every possible natural-language request is supported. Additional requested changes are recorded only after their results are verified.
 
-The submitted configuration uses the event's AWS open-source route. It makes no AWS cloud inference requests and does not create AWS resources or consume AWS credits. Cloud deployment is not required for this route.
+The verified local configuration uses the event's AWS open-source route. It makes no AWS cloud inference requests and does not create AWS resources or consume AWS credits. Cloud deployment is not required for this route. The separate hosted planner and its restricted model access are recorded above.
 
 ## Verification still to record
 
 | Item | Status in this record | What establishes completion |
 |---|---|---|
-| Full application test suite | Domain subset passed as above | Record the actual complete-suite command and result. |
+| Full application test suite | 116 offline tests and production build passed | Recorded in Latest complete verification above. |
 | Normal/conflict browser workflows | Verified and pictured above | Retained planner and conflicting-lock screenshots. |
 | JSON evidence export | Verified; exact downloaded artifact linked above | Raw request, schedule, metrics and full weather provenance are present. |
-| Acceptance and printed report | Not yet recorded here | Inspect actual local acceptance and printed output before claiming those checks. |
+| Acceptance and printed report | Local acceptance and complete printed report verified | Browser acceptance saved the plan. Hosted Chrome Save as PDF produced the linked two-page report with Default margins; Poppler rendering was visually checked and readable. |
 | Real Strands agent invocation | Verified locally as above | Record any additional constraint-edit demonstration separately. |
-| AWS cloud deployment | Intentionally not used | This submission uses AWS open-source Strands locally; do not deploy under the zero-spend requirement. |
-| Public repository | Not recorded | Published URL verified signed out. |
-| Demo video | Not recorded | YouTube URL, duration below three minutes, signed-out playback. |
+| AWS cloud deployment | Hosted interface, health and real forecast optimization verified | Public Lambda URL linked above. Hosted assistant invocation failed; health/provider configuration is not inference success. |
+| Public repository | [Published](https://github.com/kshubham090/heatshift) | GitHub API confirms PUBLIC visibility. [Initial CI passed](https://github.com/kshubham090/heatshift/actions/runs/38148246065). |
+| Demo video | 2:14.77 screenshot-based narrated walkthrough prepared; participant review pending | YouTube upload and signed-out playback pending. This is not a continuous screen recording. |
 | Field validation | Not performed | A real supervisor's constraints and practical review; later measured conditions if available. |
 
 Update a row only after the corresponding check actually occurs. A health badge, infrastructure template, successful model download or unit test with a mock does not substitute for the operation it describes.

@@ -9,6 +9,7 @@ import asyncio
 from dataclasses import dataclass, field
 import importlib.util
 import json
+import logging
 import os
 import re
 import threading
@@ -26,6 +27,81 @@ from .weather import WeatherUnavailable, get_weather
 
 class AgentUnavailable(RuntimeError):
     """The model or a required planning dependency could not complete the request."""
+
+
+_LOGGER = logging.getLogger(__name__)
+_AWS_DIAGNOSTIC_CODES = frozenset({
+    "AccessDeniedException", "UnrecognizedClientException", "InvalidSignatureException",
+    "ExpiredTokenException", "ValidationException", "ResourceNotFoundException",
+    "ModelNotReadyException", "ModelErrorException", "ModelTimeoutException",
+    "ThrottlingException", "ServiceQuotaExceededException", "InternalServerException",
+    "ServiceUnavailableException", "RequestTimeout", "RequestTimeoutException",
+})
+_DIAGNOSTIC_STAGES = frozenset({
+    "model_initialization", "agent_initialization", "model_invocation",
+    "verification_invocation", "result_validation",
+})
+
+
+def _suppress_strands_diagnostics() -> None:
+    """Keep raw SDK tool inputs and exception bodies out of application logs.
+
+    A parent logger's filter or disabled flag does not protect child handlers.
+    Seal existing SDK children too; later default SDK loggers inherit the
+    above-CRITICAL threshold. Refresh after lazy imports before constructing
+    an agent. Our separate backend.agent logger retains safe classifications.
+    """
+    namespace = logging.getLogger("strands")
+    sdk_loggers = [namespace] + [
+        value for name, value in list(logging.Logger.manager.loggerDict.items())
+        if name.startswith("strands.") and isinstance(value, logging.Logger)
+    ]
+    for sdk_logger in sdk_loggers:
+        sdk_logger.handlers = [logging.NullHandler()]
+        sdk_logger.propagate = False
+        sdk_logger.setLevel(logging.CRITICAL + 1)
+        sdk_logger.disabled = True
+
+
+# Establish the boundary before any optional model/SDK import can emit a log.
+_suppress_strands_diagnostics()
+
+
+def _safe_failure_details(error: BaseException, provider: str, stage: str) -> dict[str, Any]:
+    """Only code-level classifications; never stringify exceptions or their bodies."""
+    classes: list[str] = []
+    codes: list[str] = []
+    seen: set[int] = set()
+    current: BaseException | None = error
+    while current is not None and len(classes) < 6 and id(current) not in seen:
+        seen.add(id(current))
+        class_name = type(current).__name__
+        classes.append(class_name if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,79}", class_name) else "Exception")
+        # botocore ClientError exposes a response dict. Deliberately do not read
+        # Message, RequestId, HTTP headers, request parameters, or model output.
+        response = getattr(current, "response", None)
+        if isinstance(response, dict):
+            aws_error = response.get("Error")
+            code = aws_error.get("Code") if isinstance(aws_error, dict) else None
+            if isinstance(code, str) and code in _AWS_DIAGNOSTIC_CODES and code not in codes:
+                codes.append(code)
+        current = current.__cause__ or current.__context__
+    return {
+        "event": "heatshift_agent_failure",
+        "provider": provider if provider in {"bedrock", "ollama"} else "unknown",
+        "stage": stage if stage in _DIAGNOSTIC_STAGES else "unknown",
+        "exceptionClasses": classes,
+        "awsErrorCodes": codes,
+    }
+
+
+def _log_agent_failure(error: BaseException, provider: str, stage: str) -> None:
+    try:
+        _LOGGER.warning("%s", json.dumps(_safe_failure_details(error, provider, stage), separators=(",", ":")), exc_info=False)
+    except Exception:
+        # Diagnostics must not replace the original failure or expose it through
+        # an emergency traceback when an unusual exception/handler misbehaves.
+        pass
 
 
 SYSTEM_PROMPT = """You are HeatShift, a crew schedule planning assistant.
@@ -74,15 +150,27 @@ def _configuration() -> tuple[str, str, str]:
     return provider, model, host
 
 
+def get_agent_disabled_reason(provider: str | None = None) -> str | None:
+    """An explicit Bedrock availability override; empty by default, no probe."""
+    selected_provider = provider if provider is not None else _configuration()[0]
+    if selected_provider != "bedrock":
+        return None
+    reason = os.getenv("HEATSHIFT_AGENT_DISABLED_REASON", "").strip()
+    return reason[:500] if reason else None
+
+
 def get_agent_status() -> dict[str, Any]:
     """Cheap cached provider readiness check; never generates model output."""
     global _STATUS_CACHE
     configuration = _configuration()
+    provider, model, host = configuration
+    disabled_reason = get_agent_disabled_reason(provider)
+    if disabled_reason:
+        return {"available": False, "provider": provider, "model": model, "reason": disabled_reason}
     now = time.monotonic()
     with _STATUS_LOCK:
         if _STATUS_CACHE and _STATUS_CACHE[1] == configuration and now - _STATUS_CACHE[0] < 10:
             return dict(_STATUS_CACHE[2])
-    provider, model, host = configuration
     status: dict[str, Any] = {"available": False, "provider": provider, "model": model}
     if importlib.util.find_spec("strands") is None:
         status["reason"] = "Install the Strands agent dependencies to use chat planning."
@@ -131,8 +219,10 @@ def get_agent_status() -> dict[str, Any]:
 
 def _make_model(provider: str, model: str, host: str) -> Any:
     """Imports stay lazy so deterministic routes work without the model SDK."""
+    _suppress_strands_diagnostics()
     if provider == "ollama":
         from strands.models.ollama import OllamaModel
+        _suppress_strands_diagnostics()
         return OllamaModel(
             host=host,
             model_id=model,
@@ -145,6 +235,7 @@ def _make_model(provider: str, model: str, host: str) -> Any:
     if provider == "bedrock":
         from botocore.config import Config
         from strands.models import BedrockModel
+        _suppress_strands_diagnostics()
         return BedrockModel(
             model_id=model,
             region_name=os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "us-east-1")),
@@ -538,6 +629,8 @@ def _build_agent(session: PlanningSession, model: Any) -> Any:
     from strands.hooks import AfterToolCallEvent, HookProvider
     from strands.tools.executors import SequentialToolExecutor
 
+    _suppress_strands_diagnostics()
+
     class FinishAfterPlan(HookProvider):
         def register_hooks(self, registry):
             registry.add_callback(AfterToolCallEvent, self.after_tool)
@@ -590,12 +683,18 @@ async def run_agent(message: str, plan: PlanRequest | dict[str, Any]) -> dict[st
         raise ValueError("Write a planning request between 1 and 2,000 characters.")
     validated = PlanRequest.model_validate(plan).model_copy(deep=True)
     provider, model_id, host = _configuration()
+    disabled_reason = get_agent_disabled_reason(provider)
+    if disabled_reason:
+        raise AgentUnavailable(disabled_reason)
     session = PlanningSession(validated, message.strip())
     agent = None
+    stage = "model_initialization"
     try:
         model = _make_model(provider, model_id, host)
+        stage = "agent_initialization"
         agent = _build_agent(session, model)
         async with asyncio.timeout(85):
+            stage = "model_invocation"
             output = await agent.invoke_async(
                 "User request: " + message.strip(),
                 limits={"turns": 6, "output_tokens": 5000, "total_tokens": 40000},
@@ -604,10 +703,12 @@ async def run_agent(message: str, plan: PlanRequest | dict[str, Any]) -> dict[st
                 # Small local models sometimes end after an edit. Ask the SAME
                 # real agent to complete its required verification, with just
                 # one remaining model turn inside the original timeout/budget.
+                stage = "verification_invocation"
                 output = await agent.invoke_async(
                     "The proposal has not been verified. Call optimize_plan now; do not make another edit or end with prose.",
                     limits={"turns": 1, "output_tokens": 1000, "total_tokens": 16000},
                 )
+        stage = "result_validation"
         stop_reason = getattr(output, "stop_reason", "end_turn")
         if stop_reason in {"cancelled", "max_tokens", "limit_turns", "limit_output_tokens", "limit_total_tokens"} and not session.result:
             raise AgentUnavailable("The agent reached its planning limit without a verified result. Try one specific change.")
@@ -625,14 +726,18 @@ async def run_agent(message: str, plan: PlanRequest | dict[str, Any]) -> dict[st
             agent.cancel()
         raise
     except TimeoutError as error:
+        _log_agent_failure(error, provider, stage)
         if agent:
             agent.cancel()
         raise AgentUnavailable("The agent timed out. No changes were applied; the deterministic planner remains available.") from error
-    except AgentUnavailable:
+    except AgentUnavailable as error:
+        _log_agent_failure(error, provider, stage)
         raise
     except (ImportError, ModuleNotFoundError) as error:
+        _log_agent_failure(error, provider, stage)
         raise AgentUnavailable("The Strands model dependencies are unavailable. The deterministic planner remains available.") from error
     except Exception as error:
+        _log_agent_failure(error, provider, stage)
         # Never return SDK/provider error bodies: they can contain account details,
         # request IDs, model content, or a configured endpoint with credentials.
         if provider == "bedrock":

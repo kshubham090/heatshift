@@ -1,6 +1,6 @@
 # Draft: Building HeatShift, a schedule that respects the work
 
-**Publication status: draft.** This article has not been published to AWS Builder Center. Before publication, add the verified repository and video links and update any later checks from the evidence record. The implementation uses AWS open source locally; it does not use cloud deployment or paid AWS inference.
+**Publication status: draft.** This article has not been published to AWS Builder Center. The [public repository](https://github.com/kshubham090/heatshift) and [AWS-hosted planner](https://tap7v5jbtjbasqpzmskibpi7we0atrge.lambda-url.us-east-1.on.aws/) are available. Before publication, add the verified YouTube link. Successful assistant execution was local; the configured Bedrock assistant is currently blocked by an AWS account/service restriction.
 
 Environmental projects often start with a chart. For HeatShift, we started with a decision: a campus supervisor has outdoor jobs to finish, and some of them could happen at a different time. Can we produce a cooler feasible work plan without quietly changing what the crew owes the day?
 
@@ -34,7 +34,9 @@ Trace entries are generated inside executing tools. User-facing results are asse
 
 The current local configuration runs Strands with Ollama and `qwen3:1.7b`. In a real test, the agent handled a request that garden maintenance start only after 13:00, validated the revised plan and retained all 195 minutes of work. That invocation took 3.5 seconds on the test host and returned a forecast-average difference of 3.346°C under the revised constraints. These are observations from that run, not general latency or environmental-outcome promises. Individual natural-language edits still deserve their own test.
 
-We chose the event's AWS open-source “Build It” route, which is judged alongside deployed projects. Strands supplies the AWS integration while inference stays local. This version needs no AWS deployment, credits or cloud inference spend. The repository's run guide is local; cloud deployment files are not included.
+The same application is also deployed on a Python ARM64 AWS Lambda, serving both React assets and FastAPI through a public Function URL. The hosted app retrieved real weather and reproduced the 195-minute planning result. CloudFormation documents the runtime role, seven-day CloudWatch log retention and a DynamoDB counter that admits at most 25 hosted assistant attempts per day. This is an attempt limit, not a total spending limit.
+
+Hosting also exposed a useful distinction: having a configured provider is not the same as having working model access. The hosted assistant failed, and a minimal direct `amazon.nova-lite-v1:0` request in the Bedrock playground returned `ValidationException: Operation not allowed`. The specific account/service restriction is not established. We retain the complete, verified local Strands/Ollama workflow and clearly label the hosted assistant unavailable; we do not replace its failed request with an invented tool trace.
 
 ## Make the source visible
 
@@ -52,4 +54,4 @@ The lesson from this build is straightforward: an environmental assistant needs 
 
 ## Credits and disclosure
 
-HeatShift uses React, FastAPI, Pydantic, Strands Agents, Ollama/Qwen, and Open-Meteo with contributing weather services. The repository lists component licenses and data attribution. Original application code is MIT licensed; dependencies, model weights and forecast data retain their own terms. OpenAI Codex assisted with research, architecture, implementation, testing and this draft. No field pilot, prize or cloud deployment is claimed by this article.
+HeatShift uses React, FastAPI, Pydantic, Strands Agents, Ollama/Qwen, and Open-Meteo with contributing weather services. AWS Lambda hosts the public planner. The repository lists component licenses and data attribution. Original application code is MIT licensed; dependencies, model weights and forecast data retain their own terms. OpenAI Codex assisted with research, architecture, implementation, testing and this draft. No field pilot, prize or successful Bedrock inference is claimed by this article.

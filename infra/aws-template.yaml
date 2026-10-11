@@ -25,6 +25,11 @@ Parameters:
     MinValue: 1
     MaxValue: 100
     Description: Global admitted agent attempts per Asia/Kolkata calendar day, not a total spending cap.
+  AgentDisabledReason:
+    Type: String
+    Default: ''
+    MaxLength: 500
+    Description: Optional public explanation that temporarily disables hosted AI before billing-budget admission. Empty enables the agent.
   ReservedConcurrencyLimit:
     Type: Number
     Default: -1
@@ -124,6 +129,7 @@ Resources:
           HEATSHIFT_PUBLIC_HOSTED: '1'
           HEATSHIFT_DAILY_BUDGET_TABLE: !Ref DailyAgentBudget
           HEATSHIFT_DAILY_AGENT_LIMIT: !Ref DailyAgentLimit
+          HEATSHIFT_AGENT_DISABLED_REASON: !Ref AgentDisabledReason
           PYTHONDONTWRITEBYTECODE: '1'
       Tags:
         - Key: Application

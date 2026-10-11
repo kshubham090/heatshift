@@ -343,3 +343,131 @@ def test_tool_budget_is_bounded(plan):
         session.inspect_plan()
     with pytest.raises(ValueError, match="10-tool-call limit"):
         session.inspect_plan()
+
+
+def test_failure_diagnostics_only_log_classes_and_allowlisted_codes(caplog):
+    from botocore.exceptions import ClientError
+
+    secret = "SENSITIVE_TEST_PROMPT_AND_TOKEN"
+    inner = ClientError({
+        "Error": {"Code": "ValidationException", "Message": secret},
+        "ResponseMetadata": {"RequestId": secret, "HTTPHeaders": {"authorization": secret}},
+    }, "ConverseStream")
+    outer = RuntimeError(secret)
+    outer.__cause__ = inner
+    details = agent_module._safe_failure_details(outer, "bedrock", "model_invocation")
+    assert details["exceptionClasses"] == ["RuntimeError", "ClientError"]
+    assert details["awsErrorCodes"] == ["ValidationException"]
+    assert secret not in str(details)
+    with caplog.at_level("WARNING", logger="backend.agent"):
+        agent_module._log_agent_failure(outer, "bedrock", "model_invocation")
+    assert "ValidationException" in caplog.text
+    assert secret not in caplog.text
+    assert not any(record.exc_info for record in caplog.records)
+
+
+def test_unknown_diagnostic_code_and_exception_cycle_are_bounded():
+    from botocore.exceptions import ClientError
+
+    error = ClientError({"Error": {"Code": "UNTRUSTED_BODY_VALUE", "Message": "private"}}, "ConverseStream")
+    error.__cause__ = error
+    details = agent_module._safe_failure_details(error, "untrusted-provider", "untrusted-stage")
+    assert details["exceptionClasses"] == ["ClientError"]
+    assert details["awsErrorCodes"] == []
+    assert details["provider"] == "unknown"
+    assert details["stage"] == "unknown"
+    assert "UNTRUSTED_BODY_VALUE" not in str(details)
+
+
+def test_actual_sdk_parser_warning_is_suppressed_but_safe_diagnostics_remain(caplog, monkeypatch):
+    import io
+    import logging
+    from botocore.exceptions import ClientError
+    from strands.event_loop.streaming import handle_content_block_stop
+
+    secret = "PRIVATE_TOOL_INPUT_SENTINEL"
+    sdk_output = io.StringIO()
+    sdk_logger = logging.getLogger("strands.event_loop.streaming")
+    # An explicit child handler bypasses a parent-only NullHandler policy.
+    monkeypatch.setattr(sdk_logger, "handlers", [logging.StreamHandler(sdk_output)])
+    monkeypatch.setattr(sdk_logger, "disabled", False)
+    monkeypatch.setattr(sdk_logger, "propagate", True)
+    monkeypatch.setattr(sdk_logger, "level", logging.WARNING)
+    agent_module._suppress_strands_diagnostics()
+
+    state = {
+        "content": [],
+        "current_tool_use": {
+            "name": "propose_plan", "toolUseId": "offline-regression",
+            "input": '{"changes": ' + secret,  # Deliberately malformed JSON.
+        },
+        "text": "", "reasoningText": "", "citationsContent": [],
+    }
+    result = handle_content_block_stop(state)  # Real installed SDK; no model call.
+    assert result["content"][0]["toolUse"]["input"] == {}
+    assert sdk_output.getvalue() == ""
+    assert secret not in caplog.text
+
+    error = ClientError({"Error": {"Code": "ValidationException", "Message": secret}}, "ConverseStream")
+    with caplog.at_level("WARNING", logger="backend.agent"):
+        agent_module._log_agent_failure(error, "bedrock", "model_invocation")
+        logging.getLogger("heatshift.review").warning("Unrelated application logging still works")
+    assert "ValidationException" in caplog.text
+    assert "Unrelated application logging still works" in caplog.text
+    assert secret not in caplog.text
+    assert not any(record.exc_info for record in caplog.records)
+
+
+def test_later_sdk_child_with_default_level_cannot_reach_its_handler(monkeypatch):
+    import io
+    import logging
+
+    agent_module._suppress_strands_diagnostics()
+    sdk_logger = logging.getLogger("strands.offline_later_import_regression")
+    output = io.StringIO()
+    monkeypatch.setattr(sdk_logger, "handlers", [logging.StreamHandler(output)])
+    monkeypatch.setattr(sdk_logger, "disabled", False)
+    monkeypatch.setattr(sdk_logger, "propagate", True)
+    monkeypatch.setattr(sdk_logger, "level", logging.NOTSET)
+    sdk_logger.error("PRIVATE_LATER_SDK_SENTINEL", exc_info=True)
+    assert output.getvalue() == ""
+
+
+def test_disabled_bedrock_health_overrides_cached_ready_without_credentials(monkeypatch):
+    reason = "AWS is currently rejecting model requests for this account. Hosted AI planning is temporarily unavailable; the schedule planner remains available."
+    monkeypatch.setenv("HEATSHIFT_AGENT_PROVIDER", "bedrock")
+    monkeypatch.setenv("HEATSHIFT_AGENT_DISABLED_REASON", reason)
+    configuration = agent_module._configuration()
+    monkeypatch.setattr(agent_module, "_STATUS_CACHE", (
+        agent_module.time.monotonic(), configuration,
+        {"available": True, "provider": "bedrock", "model": configuration[1]},
+    ))
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Disabled health must not resolve credentials")
+
+    monkeypatch.setattr("boto3.Session", forbidden)
+    status = agent_module.get_agent_status()
+    assert status["available"] is False
+    assert status["reason"] == reason
+
+
+def test_disabled_bedrock_rejects_before_model_construction(plan, monkeypatch):
+    reason = "Hosted AI is temporarily unavailable; use the schedule planner."
+    monkeypatch.setenv("HEATSHIFT_AGENT_PROVIDER", "bedrock")
+    monkeypatch.setenv("HEATSHIFT_AGENT_DISABLED_REASON", reason)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Disabled agent must not construct a model")
+
+    monkeypatch.setattr(agent_module, "_make_model", forbidden)
+    with pytest.raises(AgentUnavailable) as error:
+        asyncio.run(run_agent("Find a cooler plan.", plan))
+    assert str(error.value) == reason
+
+
+@pytest.mark.parametrize("provider,reason", [("ollama", "Cloud is blocked."), ("bedrock", ""), ("bedrock", "   ")])
+def test_availability_override_is_cloud_only_and_empty_by_default(provider, reason, monkeypatch):
+    monkeypatch.setenv("HEATSHIFT_AGENT_PROVIDER", provider)
+    monkeypatch.setenv("HEATSHIFT_AGENT_DISABLED_REASON", reason)
+    assert agent_module.get_agent_disabled_reason() is None

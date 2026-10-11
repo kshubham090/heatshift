@@ -1,12 +1,12 @@
-# Optional AWS hosting: review before deployment
+# AWS hosting: deployed planner and reproducible configuration
 
-This is a prepared deployment option, not evidence of a live deployment. The existing local Ollama route remains the default. No AWS resource or model call was created by the packaging and validation work.
+The [public Lambda planner](https://tap7v5jbtjbasqpzmskibpi7we0atrge.lambda-url.us-east-1.on.aws/) is deployed. React assets, HTTP 200 health and real forecast optimization were verified on 11 October 2026. **The hosted assistant is unavailable:** a cloud invocation and a minimal direct Nova Lite playground request were rejected, the latter with `ValidationException: Operation not allowed`. The specific AWS account/service restriction is not established. The complete local Strands/Ollama route remains verified. See [the evidence record](EVIDENCE.md).
 
 For an eligible AWS **Free Plan**, access ends when the plan’s credits or time expire rather than automatically continuing under a paid plan. Verify the actual account plan, credit eligibility and each service’s availability before creating resources. Do not upgrade an account or select a paid subscription, provisioned model throughput or a quota purchase as part of this workflow. These templates do not change the account plan. Credit balances and billing records should remain private.
 
 ## Recommended small deployment
 
-One Python 3.13 ARM64 Lambda serves the built React app and FastAPI through Mangum. Its HTTPS Function URL is public. A real AWS Strands agent calls the **on-demand, direct regional** Bedrock model `amazon.nova-lite-v1:0` in `us-east-1`. The deterministic optimizer and Open-Meteo weather fetch remain the same code.
+One Python 3.13 ARM64 Lambda serves the built React app and FastAPI through Mangum. Its HTTPS Function URL is public. The Strands adapter is configured to call the **on-demand, direct regional** Bedrock model `amazon.nova-lite-v1:0` in `us-east-1`; successful inference is not claimed. The deterministic optimizer and Open-Meteo weather fetch use the same verified code as the local version.
 
 A small DynamoDB table atomically admits **25 hosted assistant attempts per day, shared by every visitor**. A private S3 bucket holds the deployment ZIP; it is not a public website. CloudWatch retains function logs for seven days. There is no API Gateway, NAT gateway, provisioned capacity, custom domain, or always-running server in this design.
 
@@ -38,6 +38,8 @@ The AWS Nova Lite console states that using the model accepts its applicable mod
 `backend/cloud_budget.py` reserves one slot with a single conditional DynamoDB update immediately before an assistant invocation. Multiple Lambda instances share the same date key. A missing table configuration, invalid limit, unreachable table or unexpected response fails closed: the model is not invoked. Exhaustion returns HTTP 429; an unavailable counter returns 503. Failed model attempts still use their reserved slot. The allowance resets at midnight **Asia/Kolkata**; TTL only removes old counter rows.
 
 The hosted template sets `HEATSHIFT_PUBLIC_HOSTED=1`, so accidentally omitting the table cannot silently disable the guard. The normal local configuration leaves those cloud settings unset and makes no DynamoDB call.
+
+When a known Bedrock restriction prevents inference, `HEATSHIFT_AGENT_DISABLED_REASON` can hold a brief public-facing explanation. With that setting present, health reports the assistant unavailable and the API refuses new assistant requests before reserving a daily attempt or constructing a model. It does not affect the deterministic planner or local Ollama configuration. Do not include private account identifiers or raw diagnostics in this message.
 
 **This is an agent-attempt limit, not a dollar limit or a cap on all hosting traffic.** An admitted agent can use multiple model turns. Unsuccessful requests, static-file requests, weather requests, logs, data transfer and conditional-counter checks can still use AWS resources. Per-process request throttles and the table’s five-unit-per-second read/write ceilings reduce bursts but do not establish a total spending ceiling. Other uses of the same AWS account can also consume its credits.
 
@@ -95,7 +97,7 @@ The same files work through the AWS console without installing the CLI: upload t
 
 The Function URL uses buffered responses and Lambda’s configured 180-second timeout; the app’s assistant timeout is shorter. This avoids an API Gateway integration timeout. Buffered payloads must remain within Lambda’s 6 MB limit. The package includes all front-end assets and requires no separate web host. There is no custom domain or global CDN; first visits can include a cold start.
 
-Direct Nova Lite support, account model entitlement, region quotas, Free Plan service availability, and live ARM Lambda execution still require verification in the owner’s account. If direct regional inference is unavailable, stop and review the exact model/profile and additional IAM scope before changing the deployment; do not silently enable a cross-region profile or paid capacity.
+Live ARM Lambda execution is verified. Direct Nova Lite inference remains blocked; account entitlement and service availability need resolution before an assistant success can be claimed. If direct regional inference is unavailable, review the exact model/profile and any additional IAM scope before changing the deployment; do not silently enable a cross-region profile or paid capacity.
 
 ## Remove the optional hosting
 

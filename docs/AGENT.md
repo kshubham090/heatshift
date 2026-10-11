@@ -1,6 +1,6 @@
 # HeatShift agent
 
-HeatShift uses the **AWS Strands Agents SDK** with a real tool-calling model. The delivered route runs locally through Ollama with `qwen3:1.7b`; no paid inference or cloud provisioning is needed. The deterministic planner remains usable when the model is unavailable. A failed or unavailable model returns HTTP 503; there is no scripted agent fallback.
+HeatShift uses the **AWS Strands Agents SDK** with a real tool-calling model. The complete assistant is verified locally through Ollama with `qwen3:1.7b`; this local setup needs no paid inference or cloud provisioning. The [AWS-hosted planner](https://tap7v5jbtjbasqpzmskibpi7we0atrge.lambda-url.us-east-1.on.aws/) is live, but AWS is currently rejecting model requests for this account. Hosted AI planning is temporarily unavailable; the schedule planner remains available. A failed or unavailable model returns HTTP 503; there is no scripted agent fallback.
 
 ## Local model
 
@@ -14,9 +14,9 @@ export OLLAMA_HOST=http://127.0.0.1:11434
 
 The local provider means inference happens through the local Ollama server. Strands is the AWS open source agent framework; **local inference is not an AWS cloud deployment**. Qwen thinking is disabled with `think: false`; no model reasoning is displayed or returned.
 
-## Optional Amazon Bedrock provider code (inactive)
+## Amazon Bedrock provider: configured, inference blocked
 
-The backend also contains a Bedrock provider adapter. It is not selected, provisioned, or used by the delivered local route. A future deliberate switch would require ordinary AWS credentials and a model enabled in the selected region:
+The hosted backend selects the Bedrock provider adapter with the model and region below. The local instructions continue to select Ollama. A separate local Bedrock configuration would require ordinary AWS credentials and model access in the selected region:
 
 ```sh
 export HEATSHIFT_AGENT_PROVIDER=bedrock
@@ -24,11 +24,13 @@ export HEATSHIFT_AGENT_MODEL=amazon.nova-lite-v1:0
 export AWS_REGION=us-east-1
 ```
 
-The model ID is an example, not a claim of account access. A supported regional model or inference profile may be needed. The application does not provision credentials or grant permissions. Bedrock errors are sanitized; account details and provider response bodies are not returned. Bedrock inference may incur account charges; provider selection is explicit.
+The model ID is configured in the hosted app, not proof of account entitlement. A hosted request failed, and a minimal direct request in the official Bedrock playground returned `ValidationException: Operation not allowed`. The specific AWS account/service restriction is not established. The application does not provision credentials or grant permissions. Bedrock errors are sanitized; account details and provider response bodies are not returned. Bedrock inference may incur account charges; provider selection is explicit.
 
 The adapter was checked offline against the installed Strands 1.59.0 and botocore service models: construction and the four-tool `ConverseStream` request schema validated, with a mocked client and zero credential lookups or inference calls. This confirms SDK compatibility, not account entitlement, regional model availability, latency or pricing. No Bedrock request has been made for this verification.
 
 `get_agent_status()` probes Ollama's installed-model list with a 1.5-second timeout and caches it for 10 seconds. Bedrock status checks credential configuration with a capped wait, not model inference. Actual entitlement and availability are checked on invocation.
+
+An operator can set `HEATSHIFT_AGENT_DISABLED_REASON` to a public-facing explanation while Bedrock is unavailable. It is empty by default and applies only to the Bedrock provider. When set, health reports the assistant unavailable and the API rejects an assistant request before reserving a daily slot or constructing a model. Local Ollama is unaffected. Keep this message free of account identifiers, credentials and internal diagnostics.
 
 ## Tool workflow
 
@@ -60,4 +62,6 @@ On 11 October 2026, real local `qwen3:1.7b` smoke tests executed `inspect_plan �
 - Garden maintenance cannot start before 13:00: the candidate changed only its `earliestStart` to `13:00`; all 195 work minutes, the inspection lock, shift and lunch remained intact. Observed duration: 3.5 seconds.
 - “Do not unlock the inspection. Set the paid shift start to09:00.”: `shiftStart` became `09:00`, `shiftEnd` stayed `17:00`, the inspection remained locked, and 195 work minutes remained. Observed duration: 7.5 seconds.
 
-Both used Open-Meteo weather and returned review-required proposals; no plan was applied. These are observed local smoke-test timings, not guaranteed latency. Forty offline agent tests passed separately. Bedrock was not invoked.
+Both used Open-Meteo weather and returned review-required proposals; no plan was applied. These are observed local smoke-test timings, not guaranteed latency. Forty offline agent tests passed separately. Bedrock was not invoked during those local tests. The later rejected cloud requests are documented in [EVIDENCE.md](EVIDENCE.md).
+
+A later focused run passed **47 offline agent tests**, adding coverage for the explicit Bedrock-unavailable override and safe diagnostics. Those tests made no cloud requests. Complete application-suite results are recorded separately in the evidence record.

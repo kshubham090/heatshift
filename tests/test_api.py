@@ -71,6 +71,21 @@ def test_agent_failure_keeps_private_error_out_of_response(client,monkeypatch):
     assert 'PRIVATE_PROVIDER_PAYLOAD' not in r.text
     assert 'unchanged' in r.json()['detail']
 
+def test_paused_cloud_agent_rejected_before_budget_or_model(client,monkeypatch):
+    import backend.agent as agent
+    reason='Hosted AI access is pending. The schedule planner remains available.'
+    monkeypatch.setenv('HEATSHIFT_AGENT_PROVIDER','bedrock')
+    monkeypatch.setenv('HEATSHIFT_AGENT_DISABLED_REASON',reason)
+    def no_budget():raise AssertionError('Paused agent must not consume a request')
+    async def no_model(*args):raise AssertionError('Paused agent must not invoke a model')
+    monkeypatch.setattr(api,'reserve_agent_slot',no_budget)
+    monkeypatch.setattr(agent,'run_agent',no_model)
+    r=client.post('/api/agent',json={'message':'Please optimise','plan':demo_plan().model_dump()})
+    assert r.status_code==503
+    assert r.json()['detail']==reason
+    assert client.get('/api/health').json()['agent']['available'] is False
+    assert client.get('/api/demo').status_code==200
+
 def test_api_headers(client,monkeypatch,fixture_weather):
     async def weather(*args):return fixture_weather
     monkeypatch.setattr(api,'get_weather',weather)
