@@ -1,0 +1,2 @@
+# HeatShift
+Build an honest, polished hackathon application. Never label forecast-based exposure as measured health improvement. Never invent weather, completed jobs, savings, deployments, or agent execution. Preserve jobs, durations, locks, breaks, and paid shift constraints. All math/optimization must be deterministic. Do not commit secrets or user credentials. Tests must cover constraint integrity, adverse inputs and data failures.

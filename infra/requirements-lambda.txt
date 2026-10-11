@@ -1,0 +1,11 @@
+# Match requirements.txt. The cloud package omits the optional Ollama transport;
+# provider=bedrock uses the genuine Strands SDK. MCP still depends on Uvicorn,
+# but Lambda serves the app through Mangum, without a listening server process.
+fastapi==0.143.0
+pydantic==2.14.0
+httpx==0.28.1
+strands-agents==1.59.0
+mangum==0.22.0
+boto3==1.43.111
+# Do not rely on an optional OS timezone database in a minimal Lambda image.
+tzdata==2026.5

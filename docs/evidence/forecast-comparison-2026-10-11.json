@@ -1,0 +1,330 @@
+{
+  "application": "HeatShift",
+  "exportedAt": "2026-10-11T14:23:11.657Z",
+  "acceptance": {
+    "status": "not accepted"
+  },
+  "disclaimer": "Forecast-based planning. Apparent temperature is not measured worker exposure or a medical safety assessment.",
+  "status": "improved",
+  "schedule": [
+    {
+      "taskId": "grounds",
+      "title": "Grounds cleanup",
+      "start": "08:00",
+      "end": "09:00",
+      "locked": false,
+      "meanApparentTemperatureC": 26.3
+    },
+    {
+      "taskId": "garden",
+      "title": "Garden maintenance",
+      "start": "09:00",
+      "end": "10:00",
+      "locked": false,
+      "meanApparentTemperatureC": 28.3
+    },
+    {
+      "taskId": "inspection",
+      "title": "Fixed contractor inspection",
+      "start": "10:00",
+      "end": "10:30",
+      "locked": true,
+      "meanApparentTemperatureC": 29.8
+    },
+    {
+      "taskId": "pathways",
+      "title": "Pathway sweeping",
+      "start": "10:30",
+      "end": "11:15",
+      "locked": false,
+      "meanApparentTemperatureC": 30.533
+    }
+  ],
+  "baselineSchedule": [
+    {
+      "taskId": "inspection",
+      "title": "Fixed contractor inspection",
+      "start": "10:00",
+      "end": "10:30",
+      "locked": true,
+      "meanApparentTemperatureC": 29.8
+    },
+    {
+      "taskId": "grounds",
+      "title": "Grounds cleanup",
+      "start": "11:30",
+      "end": "12:30",
+      "locked": false,
+      "meanApparentTemperatureC": 32.65
+    },
+    {
+      "taskId": "garden",
+      "title": "Garden maintenance",
+      "start": "13:00",
+      "end": "14:00",
+      "locked": false,
+      "meanApparentTemperatureC": 33.6
+    },
+    {
+      "taskId": "pathways",
+      "title": "Pathway sweeping",
+      "start": "14:00",
+      "end": "14:45",
+      "locked": false,
+      "meanApparentTemperatureC": 33.4
+    }
+  ],
+  "baselineValid": true,
+  "metrics": {
+    "workMinutes": 195,
+    "baselineMeanApparentTemperatureC": 32.677,
+    "proposedMeanApparentTemperatureC": 28.431,
+    "deltaC": 4.246,
+    "baselineHotMinutes": 165,
+    "proposedHotMinutes": 15,
+    "thresholdC": 32
+  },
+  "explanation": "The same 195 minutes of work fit a plan averaging 4.246\u00b0C lower forecast apparent temperature. All task windows, locks and breaks are preserved. This is a forecast comparison, not a measured health improvement.",
+  "violations": [],
+  "constraintChecks": [
+    {
+      "label": "All 4 jobs and 195 work minutes preserved",
+      "passed": true
+    },
+    {
+      "label": "One crew; no overlapping jobs",
+      "passed": true
+    },
+    {
+      "label": "Every job stays inside the paid shift and its allowed window",
+      "passed": true
+    },
+    {
+      "label": "Every locked start and protected break preserved",
+      "passed": true
+    },
+    {
+      "label": "Forecast matches the selected date and location",
+      "passed": true
+    }
+  ],
+  "weather": {
+    "source": "Open-Meteo",
+    "fetchedAt": "2026-10-11T14:22:32.193513+00:00",
+    "mode": "live",
+    "date": "2026-10-12",
+    "timezone": "Asia/Kolkata",
+    "latitude": 28.75,
+    "longitude": 77.12,
+    "gridLatitude": 28.787346,
+    "gridLongitude": 77.14286,
+    "hours": [
+      {
+        "time": "00:00",
+        "temperatureC": 22.1,
+        "apparentTemperatureC": 25.3,
+        "precipitationProbability": 8
+      },
+      {
+        "time": "01:00",
+        "temperatureC": 21.8,
+        "apparentTemperatureC": 24.7,
+        "precipitationProbability": 3
+      },
+      {
+        "time": "02:00",
+        "temperatureC": 21.5,
+        "apparentTemperatureC": 24.2,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "03:00",
+        "temperatureC": 21.4,
+        "apparentTemperatureC": 24.1,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "04:00",
+        "temperatureC": 21.3,
+        "apparentTemperatureC": 24.1,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "05:00",
+        "temperatureC": 21.1,
+        "apparentTemperatureC": 23.9,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "06:00",
+        "temperatureC": 21,
+        "apparentTemperatureC": 23.5,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "07:00",
+        "temperatureC": 21.9,
+        "apparentTemperatureC": 24.6,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "08:00",
+        "temperatureC": 23.7,
+        "apparentTemperatureC": 26.3,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "09:00",
+        "temperatureC": 25.9,
+        "apparentTemperatureC": 28.3,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "10:00",
+        "temperatureC": 27.9,
+        "apparentTemperatureC": 29.8,
+        "precipitationProbability": 1
+      },
+      {
+        "time": "11:00",
+        "temperatureC": 29.2,
+        "apparentTemperatureC": 32,
+        "precipitationProbability": 2
+      },
+      {
+        "time": "12:00",
+        "temperatureC": 30.1,
+        "apparentTemperatureC": 33.3,
+        "precipitationProbability": 4
+      },
+      {
+        "time": "13:00",
+        "temperatureC": 30.4,
+        "apparentTemperatureC": 33.6,
+        "precipitationProbability": 6
+      },
+      {
+        "time": "14:00",
+        "temperatureC": 30.6,
+        "apparentTemperatureC": 33.4,
+        "precipitationProbability": 8
+      },
+      {
+        "time": "15:00",
+        "temperatureC": 30.4,
+        "apparentTemperatureC": 33.2,
+        "precipitationProbability": 9
+      },
+      {
+        "time": "16:00",
+        "temperatureC": 29.8,
+        "apparentTemperatureC": 32.9,
+        "precipitationProbability": 10
+      },
+      {
+        "time": "17:00",
+        "temperatureC": 28.4,
+        "apparentTemperatureC": 31.7,
+        "precipitationProbability": 10
+      },
+      {
+        "time": "18:00",
+        "temperatureC": 27.1,
+        "apparentTemperatureC": 30,
+        "precipitationProbability": 7
+      },
+      {
+        "time": "19:00",
+        "temperatureC": 26.3,
+        "apparentTemperatureC": 29.3,
+        "precipitationProbability": 3
+      },
+      {
+        "time": "20:00",
+        "temperatureC": 25.5,
+        "apparentTemperatureC": 28.9,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "21:00",
+        "temperatureC": 25,
+        "apparentTemperatureC": 28.6,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "22:00",
+        "temperatureC": 24.5,
+        "apparentTemperatureC": 28.2,
+        "precipitationProbability": 0
+      },
+      {
+        "time": "23:00",
+        "temperatureC": 23.9,
+        "apparentTemperatureC": 27.8,
+        "precipitationProbability": 0
+      }
+    ],
+    "attribution": "Weather data: Open-Meteo.com and its contributing national weather services, CC BY 4.0.",
+    "sourceUrl": "https://api.open-meteo.com/v1/forecast?latitude=28.75&longitude=77.12&hourly=temperature_2m%2Capparent_temperature%2Cprecipitation_probability&timezone=Asia%2FKolkata&start_date=2026-10-12&end_date=2026-10-12&temperature_unit=celsius",
+    "warnings": [
+      "Forecast values describe a weather-model grid, not a sensor at this work site.",
+      "Each hourly forecast value is held constant within its four 15-minute planning slots.",
+      "Apparent temperature is a planning input, not an occupational heat-safety certification."
+    ]
+  },
+  "request": {
+    "date": "2026-10-12",
+    "location": {
+      "name": "Delhi \u00b7 DTU (illustrative)",
+      "latitude": 28.75,
+      "longitude": 77.12
+    },
+    "shiftStart": "08:00",
+    "shiftEnd": "17:00",
+    "breaks": [
+      {
+        "start": "12:30",
+        "end": "13:00"
+      }
+    ],
+    "thresholdC": 32,
+    "tasks": [
+      {
+        "id": "grounds",
+        "title": "Grounds cleanup",
+        "durationMinutes": 60,
+        "earliestStart": "08:00",
+        "latestEnd": "17:00",
+        "baselineStart": "11:30",
+        "locked": false
+      },
+      {
+        "id": "garden",
+        "title": "Garden maintenance",
+        "durationMinutes": 60,
+        "earliestStart": "08:00",
+        "latestEnd": "17:00",
+        "baselineStart": "13:00",
+        "locked": false
+      },
+      {
+        "id": "inspection",
+        "title": "Fixed contractor inspection",
+        "durationMinutes": 30,
+        "earliestStart": "10:00",
+        "latestEnd": "10:30",
+        "baselineStart": "10:00",
+        "locked": true
+      },
+      {
+        "id": "pathways",
+        "title": "Pathway sweeping",
+        "durationMinutes": 45,
+        "earliestStart": "08:00",
+        "latestEnd": "17:00",
+        "baselineStart": "14:00",
+        "locked": false
+      }
+    ]
+  }
+}

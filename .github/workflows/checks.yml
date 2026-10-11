@@ -1,0 +1,23 @@
+name: Verify HeatShift
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+        env:
+          HEATSHIFT_AGENT_PROVIDER: ollama
+          AWS_EC2_METADATA_DISABLED: "true"
+      - run: npm ci
+      - run: npm run build

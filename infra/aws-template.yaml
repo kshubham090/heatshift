@@ -1,0 +1,167 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Optional HeatShift public demo. One ARM Lambda serves React, FastAPI and
+  Strands with Amazon Nova Lite. A DynamoDB counter limits admitted agent
+  attempts. Creating this stack creates metered AWS resources.
+
+Parameters:
+  ArtifactBucket:
+    Type: String
+    Description: Existing private S3 bucket in this region containing the Lambda ZIP.
+    AllowedPattern: '[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]'
+  ArtifactKey:
+    Type: String
+    Description: Exact immutable object key produced by the packaging/review script.
+    MinLength: 1
+  FunctionName:
+    Type: String
+    Default: heatshift-demo
+    Description: Unique function name in this account and region.
+    AllowedPattern: '[a-zA-Z0-9-_]+'
+    MaxLength: 64
+  DailyAgentLimit:
+    Type: Number
+    Default: 25
+    MinValue: 1
+    MaxValue: 100
+    Description: Global admitted agent attempts per Asia/Kolkata calendar day, not a total spending cap.
+  ReservedConcurrencyLimit:
+    Type: Number
+    Default: -1
+    MinValue: -1
+    MaxValue: 10
+    Description: >-
+      -1 omits reserved concurrency (compatible with small new-account quotas).
+      0 stops all function execution; a positive value needs sufficient account quota.
+
+Conditions:
+  SetReservedConcurrency: !Not [!Equals [!Ref ReservedConcurrencyLimit, -1]]
+
+Resources:
+  FunctionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${FunctionName}
+      RetentionInDays: 7
+
+  DailyAgentBudget:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: day
+          AttributeType: S
+      KeySchema:
+        - AttributeName: day
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      OnDemandThroughput:
+        MaxReadRequestUnits: 5
+        MaxWriteRequestUnits: 5
+      Tags:
+        - Key: Application
+          Value: HeatShift
+
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: HeatShiftRuntimeOnly
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: WriteOwnFunctionLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${FunctionName}:log-stream:*
+              - Sid: InvokeOnlyNovaLiteInThisRegion
+                Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource: !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/amazon.nova-lite-v1:0
+              - Sid: ReserveDailyAgentAttempt
+                Effect: Allow
+                Action: dynamodb:UpdateItem
+                Resource: !GetAtt DailyAgentBudget.Arn
+
+  AppFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: FunctionLogs
+    Properties:
+      FunctionName: !Ref FunctionName
+      Description: HeatShift public demo with forecast planning and real Strands tools.
+      Runtime: python3.13
+      Architectures: [arm64]
+      Handler: backend.app.handler
+      Role: !GetAtt FunctionRole.Arn
+      MemorySize: 1024
+      Timeout: 180
+      ReservedConcurrentExecutions: !If
+        - SetReservedConcurrency
+        - !Ref ReservedConcurrencyLimit
+        - !Ref AWS::NoValue
+      Code:
+        S3Bucket: !Ref ArtifactBucket
+        S3Key: !Ref ArtifactKey
+      Environment:
+        Variables:
+          HEATSHIFT_AGENT_PROVIDER: bedrock
+          HEATSHIFT_AGENT_MODEL: amazon.nova-lite-v1:0
+          HEATSHIFT_AGENT_TIMEOUT: '110'
+          HEATSHIFT_RATE_LIMIT: '1'
+          HEATSHIFT_PUBLIC_HOSTED: '1'
+          HEATSHIFT_DAILY_BUDGET_TABLE: !Ref DailyAgentBudget
+          HEATSHIFT_DAILY_AGENT_LIMIT: !Ref DailyAgentLimit
+          PYTHONDONTWRITEBYTECODE: '1'
+      Tags:
+        - Key: Application
+          Value: HeatShift
+
+  PublicUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt AppFunction.Arn
+      AuthType: NONE
+      InvokeMode: BUFFERED
+
+  PublicUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AppFunction
+      Principal: '*'
+      Action: lambda:InvokeFunctionUrl
+      FunctionUrlAuthType: NONE
+
+  PublicInvokeViaUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AppFunction
+      Principal: '*'
+      Action: lambda:InvokeFunction
+      InvokedViaFunctionUrl: true
+
+Outputs:
+  ApplicationUrl:
+    Description: Public app URL. Anyone with this URL can use the shared hosted demo.
+    Value: !GetAtt PublicUrl.FunctionUrl
+  FunctionName:
+    Value: !Ref AppFunction
+  RuntimeRoleArn:
+    Description: Generated least-privilege execution role. No user access keys are stored in the app.
+    Value: !GetAtt FunctionRole.Arn
+  BudgetTableName:
+    Value: !Ref DailyAgentBudget
+  LogGroupName:
+    Value: !Ref FunctionLogs
