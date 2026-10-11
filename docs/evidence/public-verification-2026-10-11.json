@@ -1,0 +1,70 @@
+{
+  "checkedAt": "2026-10-11T15:38:49.318240+00:00",
+  "applicationUrl": "https://tap7v5jbtjbasqpzmskibpi7we0atrge.lambda-url.us-east-1.on.aws/",
+  "checks": [
+    {
+      "check": "Health accurately marks hosted Bedrock unavailable",
+      "passed": true
+    },
+    {
+      "check": "Demo plan is available",
+      "passed": true
+    },
+    {
+      "check": "Real forecast optimization succeeds",
+      "passed": true
+    },
+    {
+      "check": "API disables caching and MIME sniffing",
+      "passed": true
+    },
+    {
+      "check": "Every job and all 195 minutes preserved",
+      "passed": true
+    },
+    {
+      "check": "Locks, durations, windows, paid shift, breaks and crew non-overlap preserved",
+      "passed": true
+    },
+    {
+      "check": "Forecast provenance matches the requested date and location",
+      "passed": true
+    },
+    {
+      "check": "Conflicting locked jobs return no fabricated schedule or benefit",
+      "passed": true
+    },
+    {
+      "check": "Invalid baseline withholds improvement claims",
+      "passed": true
+    },
+    {
+      "check": "Invalid non-slot duration rejected",
+      "passed": true
+    },
+    {
+      "check": "Disabled AI returns the configured explanation",
+      "passed": true
+    },
+    {
+      "check": "Oversized request rejected",
+      "passed": true
+    },
+    {
+      "check": "Unknown API route returns 404",
+      "passed": true
+    }
+  ],
+  "normalMetrics": {
+    "workMinutes": 195,
+    "baselineMeanApparentTemperatureC": 32.677,
+    "proposedMeanApparentTemperatureC": 28.431,
+    "deltaC": 4.246,
+    "baselineHotMinutes": 165,
+    "proposedHotMinutes": 15,
+    "thresholdC": 32.0
+  },
+  "weatherDate": "2026-10-12",
+  "weatherFetchedAt": "2026-10-11T15:35:39.598643+00:00",
+  "hostedModelInference": "Unavailable; no successful inference claimed. This check did not invoke a model."
+}
